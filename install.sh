@@ -29,25 +29,11 @@ fi
 
 echo "Step 1: Installing dependencies..."
 sudo apt update
-sudo apt install -y libindi-dev cmake build-essential git pigpio libpigpio-dev
+sudo apt install -y libindi-dev cmake build-essential git liblgpio-dev
 
 echo
-echo "Step 2: Enabling pigpiod daemon..."
-sudo systemctl enable pigpiod
-sudo systemctl start pigpiod
-
-# Check if pigpiod is running
-if ! systemctl is-active --quiet pigpiod; then
-    echo "WARNING: pigpiod failed to start. Trying to troubleshoot..."
-    sudo systemctl status pigpiod
-    echo
-    echo "You may need to manually configure pigpiod."
-    read -p "Continue with installation? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
+echo "Step 2: Adding user to gpio group..."
+sudo usermod -a -G gpio $USER
 
 echo
 echo "Step 3: Building driver..."

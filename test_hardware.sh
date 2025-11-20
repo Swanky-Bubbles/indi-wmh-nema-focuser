@@ -1,30 +1,34 @@
 #!/bin/bash
 # Hardware test script for Waveshare Stepper Motor HAT (B)
-# Tests GPIO connectivity and basic motor operation
+# Tests GPIO connectivity and basic motor operation using lgpio
 
 echo "=========================================="
 echo "Waveshare HAT Hardware Test"
 echo "=========================================="
 echo
 
-# Check if pigpiod is running
-if ! systemctl is-active --quiet pigpiod; then
-    echo "ERROR: pigpiod is not running!"
-    echo "Start it with: sudo systemctl start pigpiod"
+# Check if user is in gpio group
+if ! groups | grep -q gpio; then
+    echo "WARNING: You are not in the 'gpio' group!"
+    echo "Add yourself with: sudo usermod -a -G gpio \$USER"
+    echo "Then logout and login again."
+    echo
+fi
+
+# Check if lgpio tools are available
+if ! command -v rgpiod &> /dev/null; then
+    echo "lgpio tools not found. Installing..."
+    sudo apt install -y liblgpio-dev lgpio
+fi
+
+echo "Testing GPIO access..."
+if [ ! -r /dev/gpiochip0 ]; then
+    echo "ERROR: Cannot access /dev/gpiochip0"
+    echo "Make sure you're in the gpio group and have logged out/in."
     exit 1
 fi
 
-echo "✓ pigpiod is running"
-echo
-
-# Check if pigs command is available
-if ! command -v pigs &> /dev/null; then
-    echo "ERROR: pigs command not found!"
-    echo "Install with: sudo apt install pigpio"
-    exit 1
-fi
-
-echo "Testing GPIO pins..."
+echo "✓ GPIO access OK"
 echo
 
 # Test Motor X pins

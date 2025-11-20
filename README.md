@@ -48,18 +48,11 @@ sudo apt update
 # Install required dependencies
 sudo apt install -y libindi-dev cmake build-essential git
 
-# Install pigpio library for GPIO control
-sudo apt install -y pigpio libpigpio-dev
+# Install lgpio library for GPIO control (no daemon required!)
+sudo apt install -y liblgpio-dev
 
-# Enable and start pigpiod daemon
-sudo systemctl enable pigpiod
-sudo systemctl start pigpiod
-
-# Verify pigpiod is running
-sudo systemctl status pigpiod
-
-# Alternative: Start pigpiod manually if systemctl doesn't work
-# sudo pigpiod
+# Add user to gpio group for permissions
+sudo usermod -a -G gpio $USER
 ```
 
 ### 2. Build the Driver
@@ -139,21 +132,17 @@ Typical configuration:
 
 ### "Failed to initialize GPIO" error
 ```bash
-# Check if pigpiod is running
-sudo systemctl status pigpiod
+# Check GPIO device permissions
+ls -l /dev/gpiochip0
 
-# If not running, start it
-sudo systemctl start pigpiod
+# Add user to gpio group if needed
+sudo usermod -a -G gpio $USER
 
-# Enable it to start on boot
-sudo systemctl enable pigpiod
+# Logout and login for group changes to take effect
+# Or use: newgrp gpio
 
-# If systemctl method doesn't work, try starting manually:
-sudo killall pigpiod  # Kill any existing instance
-sudo pigpiod          # Start daemon manually
-
-# Verify it's running
-pigs hwver            # Should return hardware version number
+# Verify access
+groups | grep gpio
 ```
 
 ### Motor not moving

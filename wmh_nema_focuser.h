@@ -24,7 +24,7 @@
 #pragma once
 
 #include <indifocuser.h>
-#include <pigpio.h>
+#include <lgpio.h>
 
 class WMHNEMAFocuser : public INDI::Focuser
 {
@@ -75,6 +75,9 @@ private:
     // Movement tracking
     uint32_t targetPosition { 0 };
     bool isMoving { false };
+    
+    // GPIO handle
+    int gpioHandle { -1 };
     
     // Motor configuration
     INumberVectorProperty StepDelayNP;

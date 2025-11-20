@@ -144,70 +144,102 @@ bool WMHNEMAFocuser::Disconnect()
 
 bool WMHNEMAFocuser::initializeGPIO()
 {
-    // Initialize pigpio library
-    int result = gpioInitialise();
-    if (result < 0)
+    // Initialize lgpio library - open the GPIO chip
+    gpioHandle = lgGpiochipOpen(0);  // 0 is /dev/gpiochip0
+    if (gpioHandle < 0)
     {
-        LOGF_ERROR("Failed to initialize pigpio library: %d", result);
-        LOG_ERROR("Make sure pigpiod daemon is running: sudo systemctl start pigpiod");
-        LOG_ERROR("You may also need to run: sudo pigpiod");
+        LOGF_ERROR("Failed to open GPIO chip: %d", gpioHandle);
+        LOG_ERROR("Make sure you have permissions to access /dev/gpiochip0");
+        LOG_ERROR("Add your user to the gpio group: sudo usermod -a -G gpio $USER");
         return false;
     }
     
-    LOGF_INFO("pigpio library initialized successfully (version %d)", result);
+    LOGF_INFO("GPIO chip opened successfully (handle %d)", gpioHandle);
 
-    // Set up Motor X pins
-    gpioSetMode(DIR_PIN_X, PI_OUTPUT);
-    gpioSetMode(STEP_PIN_X, PI_OUTPUT);
-    gpioSetMode(ENABLE_PIN_X, PI_OUTPUT);
-    gpioWrite(ENABLE_PIN_X, 1); // Disable motor initially (active low)
+    // Set up Motor X pins as outputs
+    if (lgGpioClaimOutput(gpioHandle, 0, DIR_PIN_X, 0) < 0 ||
+        lgGpioClaimOutput(gpioHandle, 0, STEP_PIN_X, 0) < 0 ||
+        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_X, 1) < 0)  // Disable motor initially (active low)
+    {
+        LOG_ERROR("Failed to claim Motor X GPIO pins");
+        lgGpiochipClose(gpioHandle);
+        gpioHandle = -1;
+        return false;
+    }
 
     // Set up Motor Y pins
-    gpioSetMode(DIR_PIN_Y, PI_OUTPUT);
-    gpioSetMode(STEP_PIN_Y, PI_OUTPUT);
-    gpioSetMode(ENABLE_PIN_Y, PI_OUTPUT);
-    gpioWrite(ENABLE_PIN_Y, 1);
+    if (lgGpioClaimOutput(gpioHandle, 0, DIR_PIN_Y, 0) < 0 ||
+        lgGpioClaimOutput(gpioHandle, 0, STEP_PIN_Y, 0) < 0 ||
+        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_Y, 1) < 0)
+    {
+        LOG_ERROR("Failed to claim Motor Y GPIO pins");
+        lgGpiochipClose(gpioHandle);
+        gpioHandle = -1;
+        return false;
+    }
 
     // Set up Motor Z pins
-    gpioSetMode(DIR_PIN_Z, PI_OUTPUT);
-    gpioSetMode(STEP_PIN_Z, PI_OUTPUT);
-    gpioSetMode(ENABLE_PIN_Z, PI_OUTPUT);
-    gpioWrite(ENABLE_PIN_Z, 1);
+    if (lgGpioClaimOutput(gpioHandle, 0, DIR_PIN_Z, 0) < 0 ||
+        lgGpioClaimOutput(gpioHandle, 0, STEP_PIN_Z, 0) < 0 ||
+        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_Z, 1) < 0)
+    {
+        LOG_ERROR("Failed to claim Motor Z GPIO pins");
+        lgGpiochipClose(gpioHandle);
+        gpioHandle = -1;
+        return false;
+    }
 
-    LOG_DEBUG("GPIO initialized successfully");
+    LOG_DEBUG("All GPIO pins initialized successfully");
     return true;
 }
 
 void WMHNEMAFocuser::shutdownGPIO()
 {
-    // Disable all motors
-    gpioWrite(ENABLE_PIN_X, 1);
-    gpioWrite(ENABLE_PIN_Y, 1);
-    gpioWrite(ENABLE_PIN_Z, 1);
-    
-    // Terminate pigpio
-    gpioTerminate();
+    if (gpioHandle >= 0)
+    {
+        // Disable all motors
+        lgGpioWrite(gpioHandle, ENABLE_PIN_X, 1);
+        lgGpioWrite(gpioHandle, ENABLE_PIN_Y, 1);
+        lgGpioWrite(gpioHandle, ENABLE_PIN_Z, 1);
+        
+        // Free GPIO pins
+        lgGpioFree(gpioHandle, DIR_PIN_X);
+        lgGpioFree(gpioHandle, STEP_PIN_X);
+        lgGpioFree(gpioHandle, ENABLE_PIN_X);
+        
+        lgGpioFree(gpioHandle, DIR_PIN_Y);
+        lgGpioFree(gpioHandle, STEP_PIN_Y);
+        lgGpioFree(gpioHandle, ENABLE_PIN_Y);
+        
+        lgGpioFree(gpioHandle, DIR_PIN_Z);
+        lgGpioFree(gpioHandle, STEP_PIN_Z);
+        lgGpioFree(gpioHandle, ENABLE_PIN_Z);
+        
+        // Close GPIO chip
+        lgGpiochipClose(gpioHandle);
+        gpioHandle = -1;
+    }
 }
 
 void WMHNEMAFocuser::setDirection(bool forward)
 {
     // Set direction: HIGH = forward, LOW = reverse
-    gpioWrite(currentDirPin, forward ? 1 : 0);
+    lgGpioWrite(gpioHandle, currentDirPin, forward ? 1 : 0);
 }
 
 void WMHNEMAFocuser::enableMotor(bool enable)
 {
     // Enable pin is active LOW
-    gpioWrite(currentEnablePin, enable ? 0 : 1);
+    lgGpioWrite(gpioHandle, currentEnablePin, enable ? 0 : 1);
 }
 
 bool WMHNEMAFocuser::stepMotor()
 {
     // Generate step pulse
-    gpioWrite(currentStepPin, 1);
-    gpioDelay(2); // 2 microsecond pulse
-    gpioWrite(currentStepPin, 0);
-    gpioDelay(stepDelay);
+    lgGpioWrite(gpioHandle, currentStepPin, 1);
+    lguSleep(0.000002);  // 2 microsecond pulse
+    lgGpioWrite(gpioHandle, currentStepPin, 0);
+    lguSleep(stepDelay / 1000000.0);  // Convert microseconds to seconds
     
     return true;
 }

@@ -33,7 +33,7 @@ add_executable(indi_wmh_nema_focuser ${WMH_NEMA_FOCUSER_SOURCES})
 # Link libraries
 target_link_libraries(indi_wmh_nema_focuser
     ${INDI_LIBRARIES}
-    pigpio
+    lgpio
     Threads::Threads
 )
 
