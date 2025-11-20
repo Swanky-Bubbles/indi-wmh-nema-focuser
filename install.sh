@@ -76,8 +76,13 @@ sudo make install
 echo
 echo "Step 5: Verifying installation..."
 
-if [ -f "/usr/bin/indi_wmh_nema_focuser" ]; then
+if [ -f "/usr/local/bin/indi_wmh_nema_focuser" ] || [ -f "/usr/bin/indi_wmh_nema_focuser" ]; then
     echo "✓ Driver binary installed successfully"
+    if [ -f "/usr/local/bin/indi_wmh_nema_focuser" ]; then
+        echo "  Location: /usr/local/bin/indi_wmh_nema_focuser"
+    else
+        echo "  Location: /usr/bin/indi_wmh_nema_focuser"
+    fi
 else
     echo "✗ Driver binary not found!"
     exit 1

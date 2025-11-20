@@ -85,7 +85,7 @@ INDI_DEBUG=5 /usr/bin/indi_wmh_nema_focuser
 
 ## File Locations
 
-- Binary: `/usr/bin/indi_wmh_nema_focuser`
+- Binary: `/usr/local/bin/indi_wmh_nema_focuser` (or `/usr/bin/indi_wmh_nema_focuser`)
 - XML: `/usr/share/indi/indi_wmh_nema_focuser.xml`
 - Config: `~/.indi/Waveshare_NEMA_Focuser_config.xml`
 
