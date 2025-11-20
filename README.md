@@ -54,6 +54,12 @@ sudo apt install -y pigpio libpigpio-dev
 # Enable and start pigpiod daemon
 sudo systemctl enable pigpiod
 sudo systemctl start pigpiod
+
+# Verify pigpiod is running
+sudo systemctl status pigpiod
+
+# Alternative: Start pigpiod manually if systemctl doesn't work
+# sudo pigpiod
 ```
 
 ### 2. Build the Driver
@@ -141,6 +147,13 @@ sudo systemctl start pigpiod
 
 # Enable it to start on boot
 sudo systemctl enable pigpiod
+
+# If systemctl method doesn't work, try starting manually:
+sudo killall pigpiod  # Kill any existing instance
+sudo pigpiod          # Start daemon manually
+
+# Verify it's running
+pigs hwver            # Should return hardware version number
 ```
 
 ### Motor not moving

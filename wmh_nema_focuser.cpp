@@ -145,11 +145,16 @@ bool WMHNEMAFocuser::Disconnect()
 bool WMHNEMAFocuser::initializeGPIO()
 {
     // Initialize pigpio library
-    if (gpioInitialise() < 0)
+    int result = gpioInitialise();
+    if (result < 0)
     {
-        LOGF_ERROR("Failed to initialize pigpio library: %d", gpioInitialise());
+        LOGF_ERROR("Failed to initialize pigpio library: %d", result);
+        LOG_ERROR("Make sure pigpiod daemon is running: sudo systemctl start pigpiod");
+        LOG_ERROR("You may also need to run: sudo pigpiod");
         return false;
     }
+    
+    LOGF_INFO("pigpio library initialized successfully (version %d)", result);
 
     // Set up Motor X pins
     gpioSetMode(DIR_PIN_X, PI_OUTPUT);
