@@ -81,7 +81,7 @@ bool WMHNEMAFocuser::initProperties()
     IUFillSwitchVector(&MicrosteppingSP, MicroSteppingS, 5, getDeviceName(), "MICROSTEPPING",
                        "Microstepping", OPTIONS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
 
-    // Set focuser parameters
+    // Set focuser parameters - these are inherited from FocuserInterface
     FocusMaxPosN[0].value = MAX_STEPS;
     FocusAbsPosN[0].min = 0;
     FocusAbsPosN[0].max = MAX_STEPS;
@@ -92,11 +92,6 @@ bool WMHNEMAFocuser::initProperties()
     FocusRelPosN[0].max = MAX_STEPS / 10;
     FocusRelPosN[0].value = 100;
     FocusRelPosN[0].step = 100;
-
-    FocusSyncN[0].min = 0;
-    FocusSyncN[0].max = MAX_STEPS;
-    FocusSyncN[0].value = 0;
-    FocusSyncN[0].step = 100;
 
     addDebugControl();
 
@@ -214,7 +209,7 @@ bool WMHNEMAFocuser::stepMotor()
 
 IPState WMHNEMAFocuser::MoveAbsFocuser(uint32_t targetTicks)
 {
-    if (targetTicks == FocusAbsPosN[0].value)
+    if (targetTicks == static_cast<uint32_t>(FocusAbsPosN[0].value))
     {
         return IPS_OK;
     }
@@ -223,7 +218,7 @@ IPState WMHNEMAFocuser::MoveAbsFocuser(uint32_t targetTicks)
     isMoving = true;
 
     // Set direction
-    bool forward = (targetTicks > FocusAbsPosN[0].value);
+    bool forward = (targetTicks > static_cast<uint32_t>(FocusAbsPosN[0].value));
     setDirection(forward);
     
     enableMotor(true);
@@ -238,18 +233,19 @@ IPState WMHNEMAFocuser::MoveAbsFocuser(uint32_t targetTicks)
 IPState WMHNEMAFocuser::MoveRelFocuser(FocusDirection dir, uint32_t ticks)
 {
     uint32_t newPosition;
+    uint32_t currentPos = static_cast<uint32_t>(FocusAbsPosN[0].value);
     
     if (dir == FOCUS_INWARD)
     {
-        newPosition = FocusAbsPosN[0].value - ticks;
+        newPosition = currentPos - ticks;
         if ((int32_t)newPosition < 0)
             newPosition = 0;
     }
     else
     {
-        newPosition = FocusAbsPosN[0].value + ticks;
-        if (newPosition > FocusMaxPosN[0].value)
-            newPosition = FocusMaxPosN[0].value;
+        newPosition = currentPos + ticks;
+        if (newPosition > static_cast<uint32_t>(FocusMaxPosN[0].value))
+            newPosition = static_cast<uint32_t>(FocusMaxPosN[0].value);
     }
 
     return MoveAbsFocuser(newPosition);
@@ -279,8 +275,8 @@ void WMHNEMAFocuser::TimerHit()
         // We've reached the target
         isMoving = false;
         enableMotor(false);
-        FocusAbsPosNP.s = IPS_OK;
-        IDSetNumber(&FocusAbsPosNP, nullptr);
+        FocusAbsPosNP.setState(IPS_OK);
+        FocusAbsPosNP.apply();
         LOG_DEBUG("Target position reached");
         return;
     }
@@ -303,7 +299,7 @@ void WMHNEMAFocuser::TimerHit()
     }
 
     FocusAbsPosN[0].value = currentPos;
-    IDSetNumber(&FocusAbsPosNP, nullptr);
+    FocusAbsPosNP.apply();
 
     SetTimer(1);
 }
