@@ -51,25 +51,33 @@ def main():
         input("Press Enter to test motor movement (Ctrl+C to cancel)...")
         print()
         
-        # Move forward 50 steps
-        print("Moving forward 50 steps...")
+        # Move forward 100 steps slowly
+        print("Moving forward 100 steps...")
         lgpio.gpio_write(h, DIR_PIN, 1)  # Forward
-        for i in range(50):
+        time.sleep(0.01)  # Let direction settle
+        
+        for i in range(100):
             lgpio.gpio_write(h, STEP_PIN, 1)
-            time.sleep(0.001)
+            time.sleep(0.005)  # 5ms high
             lgpio.gpio_write(h, STEP_PIN, 0)
-            time.sleep(0.001)
+            time.sleep(0.005)  # 5ms low (slow enough to see/hear)
+            if (i + 1) % 20 == 0:
+                print(f"  Step {i + 1}/100")
         
-        time.sleep(0.5)
+        time.sleep(1)
         
-        # Move backward 50 steps
-        print("Moving backward 50 steps...")
+        # Move backward 100 steps slowly
+        print("Moving backward 100 steps...")
         lgpio.gpio_write(h, DIR_PIN, 0)  # Reverse
-        for i in range(50):
+        time.sleep(0.01)  # Let direction settle
+        
+        for i in range(100):
             lgpio.gpio_write(h, STEP_PIN, 1)
-            time.sleep(0.001)
+            time.sleep(0.005)  # 5ms high
             lgpio.gpio_write(h, STEP_PIN, 0)
-            time.sleep(0.001)
+            time.sleep(0.005)  # 5ms low
+            if (i + 1) % 20 == 0:
+                print(f"  Step {i + 1}/100")
         
         print()
         print("✓ Test complete!")

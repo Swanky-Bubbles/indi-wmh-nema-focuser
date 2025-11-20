@@ -225,6 +225,8 @@ void WMHNEMAFocuser::setDirection(bool forward)
 {
     // Set direction: HIGH = forward, LOW = reverse
     lgGpioWrite(gpioHandle, currentDirPin, forward ? 1 : 0);
+    // DRV8825 needs 200ns setup time, add small delay to be safe
+    lguSleep(0.000001);  // 1 microsecond
 }
 
 void WMHNEMAFocuser::enableMotor(bool enable)
@@ -235,9 +237,9 @@ void WMHNEMAFocuser::enableMotor(bool enable)
 
 bool WMHNEMAFocuser::stepMotor()
 {
-    // Generate step pulse
+    // Generate step pulse - DRV8825 needs minimum 1.9μs pulse width
     lgGpioWrite(gpioHandle, currentStepPin, 1);
-    lguSleep(0.000002);  // 2 microsecond pulse
+    lguSleep(0.00001);  // 10 microsecond pulse (safe margin)
     lgGpioWrite(gpioHandle, currentStepPin, 0);
     lguSleep(stepDelay / 1000000.0);  // Convert microseconds to seconds
     
