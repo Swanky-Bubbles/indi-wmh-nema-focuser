@@ -1,0 +1,25 @@
+# Example systemd service file for running the Waveshare NEMA Focuser driver
+# This is optional - normally the driver is managed by the INDI server
+#
+# To use this file:
+# 1. Copy to /etc/systemd/system/
+#    sudo cp indi-wmh-focuser.service /etc/systemd/system/
+# 2. Enable and start:
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable indi-wmh-focuser.service
+#    sudo systemctl start indi-wmh-focuser.service
+
+[Unit]
+Description=INDI Waveshare NEMA Focuser Driver
+After=network.target pigpiod.service
+Requires=pigpiod.service
+
+[Service]
+Type=simple
+User=stellarmate
+ExecStart=/usr/bin/indi_wmh_nema_focuser -n "Waveshare NEMA Focuser"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
