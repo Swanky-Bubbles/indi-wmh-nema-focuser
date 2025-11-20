@@ -224,7 +224,7 @@ IPState WMHNEMAFocuser::MoveAbsFocuser(uint32_t targetTicks)
     enableMotor(true);
 
     LOGF_DEBUG("Moving to absolute position: %u (current: %.0f)", 
-               targetPosition, FocusAbsPosN[0].value);
+               targetPosition, FocusAbsPosNP[0].value);
 
     SetTimer(1); // Update every 1ms
     return IPS_BUSY;
