@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<driversList>
+    <devGroup group="Focusers">
+        <device label="Waveshare NEMA Focuser" manufacturer="Waveshare">
+            <driver name="Waveshare NEMA Focuser">indi_wmh_nema_focuser</driver>
+            <version>1.0</version>
+        </device>
+    </devGroup>
+</driversList>
