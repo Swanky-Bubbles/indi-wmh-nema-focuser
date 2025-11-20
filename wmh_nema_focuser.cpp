@@ -159,7 +159,7 @@ bool WMHNEMAFocuser::initializeGPIO()
     // Set up Motor X pins as outputs
     if (lgGpioClaimOutput(gpioHandle, 0, DIR_PIN_X, 0) < 0 ||
         lgGpioClaimOutput(gpioHandle, 0, STEP_PIN_X, 0) < 0 ||
-        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_X, 1) < 0)  // Disable motor initially (active low)
+        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_X, 0) < 0)  // Disable motor initially (active HIGH)
     {
         LOG_ERROR("Failed to claim Motor X GPIO pins");
         lgGpiochipClose(gpioHandle);
@@ -170,7 +170,7 @@ bool WMHNEMAFocuser::initializeGPIO()
     // Set up Motor Y pins
     if (lgGpioClaimOutput(gpioHandle, 0, DIR_PIN_Y, 0) < 0 ||
         lgGpioClaimOutput(gpioHandle, 0, STEP_PIN_Y, 0) < 0 ||
-        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_Y, 1) < 0)
+        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_Y, 0) < 0)
     {
         LOG_ERROR("Failed to claim Motor Y GPIO pins");
         lgGpiochipClose(gpioHandle);
@@ -181,7 +181,7 @@ bool WMHNEMAFocuser::initializeGPIO()
     // Set up Motor Z pins
     if (lgGpioClaimOutput(gpioHandle, 0, DIR_PIN_Z, 0) < 0 ||
         lgGpioClaimOutput(gpioHandle, 0, STEP_PIN_Z, 0) < 0 ||
-        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_Z, 1) < 0)
+        lgGpioClaimOutput(gpioHandle, 0, ENABLE_PIN_Z, 0) < 0)
     {
         LOG_ERROR("Failed to claim Motor Z GPIO pins");
         lgGpiochipClose(gpioHandle);
@@ -197,10 +197,10 @@ void WMHNEMAFocuser::shutdownGPIO()
 {
     if (gpioHandle >= 0)
     {
-        // Disable all motors
-        lgGpioWrite(gpioHandle, ENABLE_PIN_X, 1);
-        lgGpioWrite(gpioHandle, ENABLE_PIN_Y, 1);
-        lgGpioWrite(gpioHandle, ENABLE_PIN_Z, 1);
+        // Disable all motors (active HIGH means set LOW to disable)
+        lgGpioWrite(gpioHandle, ENABLE_PIN_X, 0);
+        lgGpioWrite(gpioHandle, ENABLE_PIN_Y, 0);
+        lgGpioWrite(gpioHandle, ENABLE_PIN_Z, 0);
         
         // Free GPIO pins
         lgGpioFree(gpioHandle, DIR_PIN_X);
@@ -231,8 +231,8 @@ void WMHNEMAFocuser::setDirection(bool forward)
 
 void WMHNEMAFocuser::enableMotor(bool enable)
 {
-    // Enable pin is active LOW
-    lgGpioWrite(gpioHandle, currentEnablePin, enable ? 0 : 1);
+    // Enable pin is active HIGH (opposite of typical DRV8825)
+    lgGpioWrite(gpioHandle, currentEnablePin, enable ? 1 : 0);
 }
 
 bool WMHNEMAFocuser::stepMotor()

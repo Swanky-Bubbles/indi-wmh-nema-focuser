@@ -54,8 +54,8 @@ def main():
         
         input("Press Enter to enable motor and check if it locks...")
         
-        # Enable motor (active low)
-        lgpio.gpio_write(h, ENABLE_PIN, 0)
+        # Enable motor (active HIGH for this HAT - opposite of typical DRV8825)
+        lgpio.gpio_write(h, ENABLE_PIN, 1)
         print("✓ Motor enabled (should feel resistance/lock)")
         time.sleep(0.5)
         
@@ -130,13 +130,18 @@ def main():
         
     finally:
         # Disable motor and clean up
-        lgpio.gpio_write(h, ENABLE_PIN, 1)
-        lgpio.gpio_free(h, DIR_PIN)
-        lgpio.gpio_free(h, STEP_PIN)
-        lgpio.gpio_free(h, ENABLE_PIN)
-        lgpio.gpiochip_close(h)
         print()
-        print("GPIO cleaned up")
+        print("Cleaning up GPIO...")
+        try:
+            lgpio.gpio_write(h, ENABLE_PIN, 0)  # Disable motor (reverse of enable)
+            time.sleep(0.1)
+            lgpio.gpio_free(h, DIR_PIN)
+            lgpio.gpio_free(h, STEP_PIN)
+            lgpio.gpio_free(h, ENABLE_PIN)
+            lgpio.gpiochip_close(h)
+            print("✓ GPIO cleaned up, motor disabled")
+        except Exception as e:
+            print(f"Warning during cleanup: {e}")
     
     return 0
 
