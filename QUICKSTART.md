@@ -4,14 +4,18 @@
 
 ```bash
 ./install.sh
-# Then logout and login again
+# Then logout and login again for gpio group permissions
 sudo systemctl restart indiserver
 ```
 
 ## Hardware Test
 
 ```bash
-./test_hardware.sh
+# Test GPIO and motor movement
+./test_gpio_simple.py
+
+# If motor doesn't move, adjust current limit potentiometer
+# (turn clockwise, test, repeat)
 ```
 
 ## Usage in KStars/Ekos
@@ -40,6 +44,18 @@ Match software setting to HAT jumper configuration:
 - 1/8 Step: 1600 steps/rev
 - 1/16 Step: 3200 steps/rev
 
+## Hardware Setup
+
+**Microstepping DIP Switches (recommended):**
+- Set all 3 switches to ON for 1/16 step mode
+- Set "Microstepping" to "1/16 Step" in INDI
+- Set "Steps/Rev" to 3200 in INDI
+
+**Current Limit:**
+- Adjust potentiometer on HAT (near DRV8825 chip)
+- Turn clockwise until motor moves reliably
+- Don't over-tighten (chip will overheat)
+
 ## GPIO Pin Reference
 
 | Motor | DIR | STEP | ENABLE |
@@ -47,6 +63,8 @@ Match software setting to HAT jumper configuration:
 | X     | 13  | 19   | 12     |
 | Y     | 24  | 18   | 4      |
 | Z     | 21  | 26   | 25     |
+
+**Note:** Enable pin is active HIGH (motor locks when HIGH)
 
 ## Troubleshooting Quick Fixes
 
@@ -57,8 +75,12 @@ sudo systemctl restart indiserver
 
 ### GPIO errors
 ```bash
-sudo systemctl start pigpiod
-sudo systemctl enable pigpiod
+# Check GPIO access
+ls -l /dev/gpiochip0
+
+# Add to gpio group if needed
+sudo usermod -a -G gpio $USER
+# Then logout and login
 ```
 
 ### Permission denied
@@ -68,10 +90,13 @@ sudo usermod -a -G gpio $USER
 ```
 
 ### Motor doesn't move
-1. Check power supply
-2. Verify correct motor channel selected
-3. Increase step delay
-4. Run `./test_hardware.sh`
+1. **Adjust current limit** (most common!)
+   - Turn potentiometer clockwise
+2. Check 12V power supply connected
+3. Verify motor on correct channel
+4. Set all DIP switches OFF (try full-step mode)
+5. Run `./test_gpio_simple.py`
+6. Increase step delay in INDI
 
 ## Manual Driver Start (for debugging)
 

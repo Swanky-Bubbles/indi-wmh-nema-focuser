@@ -115,13 +115,30 @@ Or restart from the StellarMate Web Manager.
 
 ### Hardware Microstepping Configuration
 
-The Waveshare Stepper Motor HAT (B) uses DIP switches or jumpers to configure microstepping. Consult the [Waveshare documentation](https://www.waveshare.com/wiki/Stepper_Motor_HAT_(B)) for your specific board revision.
+The Waveshare Stepper Motor HAT (B) uses DIP switches to configure microstepping for each motor channel:
 
-Typical configuration:
-- All switches OFF = Full step
-- Switch pattern per Waveshare documentation for 1/2, 1/4, 1/8, 1/16 steps
+| Mode | Steps/Rev | Switch 1 | Switch 2 | Switch 3 | Recommended For |
+|------|-----------|----------|----------|----------|----------------|
+| Full Step | 200 | OFF | OFF | OFF | Fast movements |
+| Half Step | 400 | ON | OFF | OFF | - |
+| Quarter Step | 800 | OFF | ON | OFF | - |
+| Eighth Step | 1600 | ON | ON | OFF | - |
+| **1/16 Step** | **3200** | **ON** | **ON** | **ON** | **Telescope focusing** |
 
-**Important**: The driver's microstepping setting should match your hardware configuration.
+**Switch positions:**
+- **OFF** = Switch in down/off position
+- **ON** = Switch in up/on position
+
+**Recommended setting:** 1/16 microstepping (all three switches ON) for smooth, precise focusing.
+
+**Important Notes:**
+1. The driver's "Microstepping Mode" setting should match your hardware DIP switch configuration
+2. DIP switches are located on the HAT, typically labeled SW1, SW2, SW3 for each motor
+3. Motor X switches control Motor X (MA), Motor Y controls Motor Y (MB), etc.
+4. Power off the HAT before changing DIP switch settings
+5. After changing switches, adjust the "Steps per Revolution" in INDI (200 × microstepping factor)
+
+Consult the [Waveshare documentation](https://www.waveshare.com/wiki/Stepper_Motor_HAT_(B)) for the exact DIP switch locations on your board revision.
 
 ## Troubleshooting
 
@@ -146,11 +163,21 @@ groups | grep gpio
 ```
 
 ### Motor not moving
-- Verify power supply is connected to the Waveshare HAT
-- Check motor is properly connected to the correct channel
-- Verify GPIO pins are not being used by other services
-- Check motor enable switch on the HAT (if applicable)
-- Try increasing step delay for testing
+**Most common issue: Current limit set too low!**
+
+1. **Adjust current limit potentiometer:**
+   - Locate the small potentiometer near the DRV8825 chip
+   - Turn it clockwise (about 1/4 turn at a time)
+   - Test after each adjustment
+   - For NEMA 17: aim for 0.4-0.8V reference voltage
+
+2. **Other checks:**
+   - Verify 12V power supply is connected to the HAT
+   - Check motor is connected to the correct channel (Motor X = MA)
+   - Ensure all 4 motor wires are firmly connected
+   - Try setting all DIP switches to OFF (full-step mode)
+   - Run test script: `./test_gpio_simple.py`
+   - Try increasing step delay for testing
 
 ### Permission issues
 ```bash
@@ -179,9 +206,11 @@ sudo usermod -a -G gpio $USER
 - Motor automatically disabled when idle to reduce power and heat
 
 ### GPIO Control
-- Uses pigpio library for precise timing
-- Step pulse width: 2 microseconds
-- Configurable inter-step delay
+- Uses lgpio library for direct GPIO access (no daemon required)
+- Accesses /dev/gpiochip0 directly
+- Step pulse width: 10 microseconds
+- Configurable inter-step delay (100-10000 μs)
+- Enable pin is active HIGH (motor locks when pin is HIGH)
 
 ## Development
 
@@ -198,12 +227,18 @@ make
 ### Testing
 
 ```bash
+# Test hardware first with Python script
+./test_gpio_simple.py
+
 # Run the driver directly for debugging
-INDI_DEBUG=5 /usr/bin/indi_wmh_nema_focuser
+INDI_DEBUG=5 /usr/local/bin/indi_wmh_nema_focuser
 
 # Connect with indi_getprop
 indi_getprop "Waveshare NEMA Focuser.CONNECTION.CONNECT"
 indi_setprop "Waveshare NEMA Focuser.CONNECTION.CONNECT=On"
+
+# Move to position 100
+indi_setprop "Waveshare NEMA Focuser.ABS_FOCUS_POSITION.FOCUS_ABSOLUTE_POSITION=100"
 ```
 
 ## License
