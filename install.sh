@@ -29,14 +29,46 @@ fi
 
 echo "Step 1: Installing dependencies..."
 sudo apt update
-sudo apt install -y libindi-dev cmake build-essential git liblgpio-dev
+sudo apt install -y libindi-dev cmake build-essential git liblgpio-dev pkg-config
 
 echo
-echo "Step 2: Adding user to gpio group..."
+echo "Step 2: Verifying INDI installation..."
+# Try to detect INDI version using multiple methods
+INDI_VERSION=""
+
+# Method 1: Try pkg-config
+if command -v pkg-config &> /dev/null; then
+    INDI_VERSION=$(pkg-config --modversion indi 2>/dev/null || true)
+fi
+
+# Method 2: Try indi_getprop if available
+if [ -z "$INDI_VERSION" ] && command -v indi_getprop &> /dev/null; then
+    INDI_VERSION=$(indi_getprop --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1 || true)
+fi
+
+# Method 3: Check for INDI header files and extract version
+if [ -z "$INDI_VERSION" ]; then
+    for header in /usr/include/libindi/indiapi.h /usr/local/include/libindi/indiapi.h; do
+        if [ -f "$header" ]; then
+            INDI_VERSION=$(grep -E "INDI_VERSION_MAJOR|VERSION" "$header" 2>/dev/null | head -1 | grep -oP '\d+\.\d+\.\d+' || true)
+            break
+        fi
+    done
+fi
+
+if [ -n "$INDI_VERSION" ]; then
+    echo "✓ INDI version $INDI_VERSION detected"
+else
+    echo "⚠ Could not detect INDI version automatically"
+    echo "  libindi-dev appears to be installed, proceeding with build..."
+fi
+
+echo
+echo "Step 3: Adding user to gpio group..."
 sudo usermod -a -G gpio $USER
 
 echo
-echo "Step 3: Building driver..."
+echo "Step 4: Building driver..."
 
 # Create build directory
 if [ -d "build" ]; then
@@ -56,11 +88,11 @@ echo "Compiling..."
 make -j$(nproc)
 
 echo
-echo "Step 4: Installing driver..."
+echo "Step 5: Installing driver..."
 sudo make install
 
 echo
-echo "Step 5: Verifying installation..."
+echo "Step 6: Verifying installation..."
 
 if [ -f "/usr/local/bin/indi_wmh_nema_focuser" ] || [ -f "/usr/bin/indi_wmh_nema_focuser" ]; then
     echo "✓ Driver binary installed successfully"
@@ -82,7 +114,7 @@ else
 fi
 
 echo
-echo "Step 6: Adding user to GPIO group..."
+echo "Step 7: Adding user to GPIO group..."
 sudo usermod -a -G gpio $USER
 
 echo
