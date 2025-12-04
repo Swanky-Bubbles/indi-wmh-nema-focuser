@@ -33,6 +33,22 @@ sudo apt install -y libindi-dev cmake build-essential git liblgpio-dev pkg-confi
 
 echo
 echo "Step 2: Verifying INDI installation..."
+
+# Check if libindi-dev is installed
+if ! dpkg -l | grep -q libindi-dev; then
+    echo "ERROR: libindi-dev is not installed!"
+    echo "Please install INDI first. This driver requires INDI version 2.1.6 or later."
+    echo
+    echo "For Raspberry Pi / StellarMate:"
+    echo "  sudo add-apt-repository ppa:mutlaqja/ppa"
+    echo "  sudo apt update"
+    echo "  sudo apt install libindi-dev indi-bin"
+    echo
+    echo "Or build INDI from source:"
+    echo "  https://github.com/indilib/indi"
+    exit 1
+fi
+
 # Try to detect INDI version using multiple methods
 INDI_VERSION=""
 
@@ -41,16 +57,21 @@ if command -v pkg-config &> /dev/null; then
     INDI_VERSION=$(pkg-config --modversion indi 2>/dev/null || true)
 fi
 
-# Method 2: Try indi_getprop if available
+# Method 2: Check dpkg for package version
+if [ -z "$INDI_VERSION" ]; then
+    INDI_VERSION=$(dpkg -l | grep libindi-dev | awk '{print $3}' | head -1 || true)
+fi
+
+# Method 3: Try indi_getprop if available
 if [ -z "$INDI_VERSION" ] && command -v indi_getprop &> /dev/null; then
     INDI_VERSION=$(indi_getprop --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1 || true)
 fi
 
-# Method 3: Check for INDI header files and extract version
+# Method 4: Check for INDI header files
 if [ -z "$INDI_VERSION" ]; then
     for header in /usr/include/libindi/indiapi.h /usr/local/include/libindi/indiapi.h; do
         if [ -f "$header" ]; then
-            INDI_VERSION=$(grep -E "INDI_VERSION_MAJOR|VERSION" "$header" 2>/dev/null | head -1 | grep -oP '\d+\.\d+\.\d+' || true)
+            echo "✓ INDI development files found at $header"
             break
         fi
     done
@@ -58,9 +79,21 @@ fi
 
 if [ -n "$INDI_VERSION" ]; then
     echo "✓ INDI version $INDI_VERSION detected"
+    
+    # Warn if version might be too old
+    MAJOR=$(echo $INDI_VERSION | cut -d. -f1)
+    MINOR=$(echo $INDI_VERSION | cut -d. -f2)
+    if [ "$MAJOR" -lt 2 ] || ([ "$MAJOR" -eq 2 ] && [ "$MINOR" -lt 1 ]); then
+        echo "⚠ WARNING: INDI version $INDI_VERSION may be too old (requires 2.1.6+)"
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
 else
-    echo "⚠ Could not detect INDI version automatically"
-    echo "  libindi-dev appears to be installed, proceeding with build..."
+    echo "⚠ Could not detect INDI version, but libindi-dev is installed"
+    echo "  Proceeding with build..."
 fi
 
 echo
