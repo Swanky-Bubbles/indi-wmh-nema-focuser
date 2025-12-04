@@ -183,13 +183,43 @@ if(${INDI_PUBLIC_VAR_NS}_INCLUDE_DIR)
         message(FATAL_ERROR "INDI version header not found")
     endif()
 
-    if(${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES ".*INDI_VERSION ([0-9]+).([0-9]+).([0-9]+)")
-            set(${INDI_PUBLIC_VAR_NS}_MAJOR_VERSION "${CMAKE_MATCH_1}")
-            set(${INDI_PUBLIC_VAR_NS}_MINOR_VERSION "${CMAKE_MATCH_2}")
-            set(${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION "${CMAKE_MATCH_3}")
-    else()
-        message(FATAL_ERROR "failed to detect INDI version")
+    # Try multiple regex patterns to match different INDI version formats
+    set(${INDI_PUBLIC_VAR_NS}_VERSION_FOUND FALSE)
+    
+    # Pattern 1: INDI_VERSION X.Y.Z
+    if(${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES "INDI_VERSION[ \t]+([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+        set(${INDI_PUBLIC_VAR_NS}_MAJOR_VERSION "${CMAKE_MATCH_1}")
+        set(${INDI_PUBLIC_VAR_NS}_MINOR_VERSION "${CMAKE_MATCH_2}")
+        set(${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION "${CMAKE_MATCH_3}")
+        set(${INDI_PUBLIC_VAR_NS}_VERSION_FOUND TRUE)
+    # Pattern 2: Separate MAJOR, MINOR, PATCH defines
+    elseif(${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES "INDI_VERSION_MAJOR[ \t]+([0-9]+)" AND
+           ${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES "INDI_VERSION_MINOR[ \t]+([0-9]+)")
+        set(${INDI_PUBLIC_VAR_NS}_MAJOR_VERSION "${CMAKE_MATCH_1}")
+        string(REGEX MATCH "INDI_VERSION_MINOR[ \t]+([0-9]+)" ${INDI_PRIVATE_VAR_NS}_MINOR_MATCH "${${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS}")
+        set(${INDI_PUBLIC_VAR_NS}_MINOR_VERSION "${CMAKE_MATCH_1}")
+        if(${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES "INDI_VERSION_RELEASE[ \t]+([0-9]+)")
+            set(${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION "${CMAKE_MATCH_1}")
+        elseif(${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES "INDI_VERSION_PATCH[ \t]+([0-9]+)")
+            set(${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION "${CMAKE_MATCH_1}")
+        else()
+            set(${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION "0")
+        endif()
+        set(${INDI_PUBLIC_VAR_NS}_VERSION_FOUND TRUE)
+    # Pattern 3: Quoted version string "X.Y.Z"
+    elseif(${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS MATCHES "\"([0-9]+)\\.([0-9]+)\\.([0-9]+)\"")
+        set(${INDI_PUBLIC_VAR_NS}_MAJOR_VERSION "${CMAKE_MATCH_1}")
+        set(${INDI_PUBLIC_VAR_NS}_MINOR_VERSION "${CMAKE_MATCH_2}")
+        set(${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION "${CMAKE_MATCH_3}")
+        set(${INDI_PUBLIC_VAR_NS}_VERSION_FOUND TRUE)
     endif()
+    
+    if(NOT ${INDI_PUBLIC_VAR_NS}_VERSION_FOUND)
+        message(STATUS "INDI version header contents:")
+        message(STATUS "${${INDI_PRIVATE_VAR_NS}_VERSION_HEADER_CONTENTS}")
+        message(FATAL_ERROR "Failed to detect INDI version. Please check indiversion.h format.")
+    endif()
+    
     set(${INDI_PUBLIC_VAR_NS}_VERSION "${${INDI_PUBLIC_VAR_NS}_MAJOR_VERSION}.${${INDI_PUBLIC_VAR_NS}_MINOR_VERSION}.${${INDI_PUBLIC_VAR_NS}_RELEASE_VERSION}")
 
     # Check libraries
