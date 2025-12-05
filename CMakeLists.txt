@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(indi_wmh_nema_focuser CXX C)
 
 # INDI version requirement
-set(INDI_MIN_VERSION "2.1.6")
+set(INDI_MIN_VERSION "1.1.0")
 
 # Find required packages
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
